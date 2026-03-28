@@ -1,0 +1,6 @@
+intent,n_sessions,tempo_bpm,valence,energy,acousticness,instrumentalness,danceability,speechiness,loudness_db
+anxiety_relief,2518,-0.537,-0.002,-0.496,-0.0,-0.039,0.024,-0.007,-0.055
+deep_focus,1729,0.162,-0.056,-0.067,-0.015,-0.009,-0.03,-0.564,0.042
+grief_processing,446,-0.409,-0.607,0.004,0.146,-0.039,0.032,-0.005,-0.01
+mood_uplift,1338,-0.019,0.601,0.205,-0.038,0.024,0.001,0.011,0.009
+sleep_induction,1969,-0.31,-0.093,-0.248,0.003,0.018,0.032,-0.004,-0.02
