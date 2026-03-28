@@ -1,0 +1,5 @@
+﻿models/checkpoints/
+logs/
+__pycache__/
+.vscode/
+.DS_Store

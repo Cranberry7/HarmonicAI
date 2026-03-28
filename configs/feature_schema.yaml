@@ -1,0 +1,235 @@
+# configs/feature_schema.yaml
+# HarmonicAI — Canonical Feature Dictionary
+# This file is the single source of truth for all feature names, types, and ranges.
+# Any change here must be versioned and propagated to all dependent modules.
+
+schema_version: "0.1.0"
+
+# ─────────────────────────────────────────────
+# DOMAIN A: ACOUSTIC FEATURES (Track-Level)
+# ─────────────────────────────────────────────
+acoustic_features:
+
+  metadata_layer:
+    # Available from Spotify API / AcousticBrainz
+    # Used in: Phase 1 (EDA), Phase 2 (Clustering), Phase 3 (Prediction)
+
+    - name: track_id
+      type: string
+      description: "Spotify track URI or internal UUID"
+      nullable: false
+
+    - name: tempo_bpm
+      type: float
+      range: [40.0, 220.0]
+      therapeutic_note: "<60 BPM activates parasympathetic NS; 120-140 BPM linked to focus entrainment"
+      nullable: false
+
+    - name: valence
+      type: float
+      range: [0.0, 1.0]
+      description: "Musical positiveness (Spotify definition)"
+      therapeutic_note: "High valence ≠ therapeutic; grief processing may require low valence"
+      nullable: false
+
+    - name: energy
+      type: float
+      range: [0.0, 1.0]
+      description: "Perceptual intensity and activity"
+      therapeutic_note: "High energy (>0.8) risks cortisol spike in anxiety states"
+      nullable: false
+
+    - name: acousticness
+      type: float
+      range: [0.0, 1.0]
+      description: "Confidence that track is acoustic (non-electronic)"
+      therapeutic_note: "Acoustic texture linked to grounding responses"
+      nullable: false
+
+    - name: instrumentalness
+      type: float
+      range: [0.0, 1.0]
+      description: "Predicts absence of vocals (>0.5 = likely instrumental)"
+      therapeutic_note: "Critical routing signal for NLP lyrical safety filter"
+      nullable: false
+
+    - name: danceability
+      type: float
+      range: [0.0, 1.0]
+      description: "Rhythmic stability and regularity"
+      therapeutic_note: "Proxy for rhythmic entrainment potential"
+      nullable: false
+
+    - name: loudness_db
+      type: float
+      range: [-60.0, 0.0]
+      description: "Overall loudness in decibels (LUFS-normalized)"
+      therapeutic_note: "Clipping above -6dB may trigger startle/stress response"
+      nullable: false
+
+    - name: key
+      type: integer
+      range: [0, 11]
+      description: "Pitch class (0=C, 1=C#, ..., 11=B)"
+      therapeutic_note: "Key alone is not a reliable therapeutic predictor"
+      nullable: true  # Not all tracks have detected key
+
+    - name: mode
+      type: integer
+      range: [0, 1]
+      description: "Modality: 0=Minor, 1=Major"
+      therapeutic_note: "Minor ≠ sad; context-dependent"
+      nullable: false
+
+    - name: time_signature
+      type: integer
+      range: [3, 7]
+      description: "Estimated time signature (beats per measure)"
+      therapeutic_note: "4/4 most grounding; 7/8 may increase cognitive load"
+      nullable: false
+
+    - name: duration_ms
+      type: integer
+      range: [30000, 3600000]
+      description: "Track duration in milliseconds"
+      nullable: false
+
+    - name: speechiness
+      type: float
+      range: [0.0, 1.0]
+      description: "Presence of spoken words (>0.66 = likely speech)"
+      therapeutic_note: "Routing signal: high speechiness → NLP filter mandatory"
+      nullable: false
+
+  signal_layer:
+    # Extracted from raw audio via librosa / torchaudio
+    # Used in: Phase 4 ONLY — deferred
+    # DO NOT USE in Phases 1–3
+
+    - name: mel_spectrogram_path
+      type: string
+      description: "Path to .npy file of Mel-spectrogram tensor (shape: [128, T])"
+      phase: 4
+
+    - name: mfcc_mean
+      type: array[float]
+      shape: [40]
+      description: "Mean MFCC coefficients across time"
+      phase: 4
+
+    - name: spectral_centroid_mean
+      type: float
+      description: "Mean spectral centroid (Hz) — brightness proxy"
+      phase: 4
+
+    - name: zero_crossing_rate_mean
+      type: float
+      description: "Mean ZCR — percussiveness proxy"
+      phase: 4
+
+
+# ─────────────────────────────────────────────
+# DOMAIN B: MOOD / PSYCHOLOGICAL LABELS
+# ─────────────────────────────────────────────
+mood_schema:
+
+  session_intent:
+    type: enum
+    values:
+      - anxiety_relief
+      - sleep_induction
+      - deep_focus
+      - mood_uplift
+      - grief_processing
+    description: "User's declared therapeutic goal for the session"
+
+  mood_score:
+    type: integer
+    range: [0, 100]
+    description: "Unified mood score (0=worst, 100=best). Derived from PANAS-simplified 5-point scale"
+    scale_mapping:
+      stressed:  [0, 20]
+      anxious:   [21, 40]
+      neutral:   [41, 60]
+      focused:   [61, 80]
+      calm:      [81, 100]
+
+  efficacy_label:
+    type: integer
+    values: [-1, 0, 1]
+    derivation: |
+      delta_mood = mood_post - mood_pre
+      label = +1 if (delta_mood > +5 OR efficacy_rating >= 7)
+      label =  0 if (abs(delta_mood) <= 5 AND efficacy_rating in [4,5,6])
+      label = -1 if (delta_mood < -5 OR efficacy_rating <= 3)
+    note: "This is our supervised learning target variable. Handle class imbalance carefully."
+
+
+# ─────────────────────────────────────────────
+# DOMAIN C: USER PROFILE SCHEMA
+# ─────────────────────────────────────────────
+user_profile:
+
+  - name: user_id
+    type: string
+    description: "UUID v4 — never use PII as identifier"
+
+  - name: age_band
+    type: enum
+    values: [18-24, 25-34, 35-44, 45-54, 55+]
+    note: "Age band, not exact age — reduces re-identification risk"
+
+  - name: baseline_mood
+    type: integer
+    range: [0, 100]
+    description: "Onboarding self-reported mood score"
+
+  - name: primary_intent
+    type: enum
+    values: [anxiety_relief, sleep_induction, deep_focus, mood_uplift, grief_processing]
+
+  - name: sensitivity_flags
+    type: array[string]
+    description: "Clinical sensitivity markers (e.g., ['ptsd_trigger', 'grief']) — drives stricter safety filtering"
+    note: "HIPAA-sensitive field — encrypted at rest, never logged in plaintext"
+
+  - name: listening_history_ids
+    type: array[string]
+    description: "List of track_ids from past sessions — used for collaborative filtering (Phase 7)"
+
+
+# ─────────────────────────────────────────────
+# WEAK LABEL PRIORS (Research-Seeded)
+# ─────────────────────────────────────────────
+# These are probabilistic priors, NOT ground truth.
+# Used only to seed the synthetic dataset in Phase 0.
+# The feedback loop (Phase 7) will override these over time.
+
+weak_label_rules:
+
+  anxiety_relief:
+    tempo_bpm:        [60, 80]
+    energy:           [0.0, 0.4]
+    acousticness:     [0.5, 1.0]
+    instrumentalness: [0.6, 1.0]
+    loudness_db:      [-30, -10]
+    source: "Thaut et al. — Neurologic Music Therapy"
+
+  sleep_induction:
+    tempo_bpm:        [40, 65]
+    energy:           [0.0, 0.3]
+    instrumentalness: [0.7, 1.0]
+    valence:          [0.2, 0.6]
+    source: "Harmat et al. — Sleep Medicine"
+
+  deep_focus:
+    tempo_bpm:        [40, 60]   # OR [120, 140] — bimodal distribution
+    energy:           [0.3, 0.6]
+    speechiness:      [0.0, 0.1]
+    source: "Ritter et al. — Cognitive Performance & Music"
+
+  mood_uplift:
+    valence:          [0.65, 1.0]
+    energy:           [0.5, 0.8]
+    mode:             [1, 1]     # Major key
+    source: "Affective Computing literature (Russell's Circumplex)"
