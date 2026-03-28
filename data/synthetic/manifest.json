@@ -1,0 +1,13 @@
+{
+  "phase": 0,
+  "seed": 42,
+  "n_tracks": 5000,
+  "n_users": 500,
+  "n_sessions": 8000,
+  "noise_std": 0.15,
+  "files": {
+    "tracks": "data/synthetic/tracks.csv",
+    "users": "data/synthetic/users.csv",
+    "sessions": "data/synthetic/sessions.csv"
+  }
+}
