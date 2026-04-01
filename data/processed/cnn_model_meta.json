@@ -1,0 +1,15 @@
+{
+  "model_type": "MLP on hand-crafted spectrogram features",
+  "n_features": 52,
+  "cv_f1_macro": 0.5595,
+  "architecture": "52 \u2192 128 \u2192 64 \u2192 3",
+  "production_replacement": "TherapyCNN (PyTorch) \u2014 see therapy_cnn_architecture.py",
+  "input_shape": "(1, 128, 128)",
+  "feature_groups": [
+    "frequency_band_stats (16)",
+    "temporal_stats_per_band (12)",
+    "spectral_features (8)",
+    "rhythm_features (4)",
+    "global_statistics (12)"
+  ]
+}
